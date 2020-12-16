@@ -1,0 +1,48 @@
+version: '3.7'
+
+services:
+  redis:
+    image: redis
+    restart: always
+  dj-chat.wsgi:
+    build: .
+    image: "dj-chat:latest"
+    container_name: "dj-chat-g-unicorn"
+    command: bash -c "python manage.py migrate&&gunicorn -w 1 -k gevent -b 0.0.0.0:8000 dj_chat.wsgi:application"
+    depends_on:
+      - redis
+    links:
+      - redis
+    expose:
+      - "8000"
+    env_file:
+      - docker.env
+    volumes:
+      - .:/dj-chat
+  dj-chat.asgi:
+    image: "dj-chat:latest"
+    container_name: "dj-chat-daphne"
+    command: bash -c "daphne -b 0.0.0.0 -p 8001 dj_chat.asgi:application"
+    depends_on:
+      - redis
+    links:
+      - redis
+    expose:
+      - "8001"
+    env_file:
+      - docker.env
+    volumes:
+      - .:/dj-chat
+  nginx:
+    build:
+      context: .
+      dockerfile: ./nginx/Dockerfile
+    image: "nginx-chat"
+    container_name: "nginx-chat"
+    depends_on:
+      - dj-chat.wsgi
+      - dj-chat.asgi
+    volumes:
+      - ./static:/home/ubuntu/static
+    ports:
+    - "80:80"
