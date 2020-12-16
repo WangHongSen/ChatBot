@@ -1,3 +1,4 @@
 *.zip 
 *.pyc
 imageC\__pycache__\*
+pytorch_bot\__pycache__\*
